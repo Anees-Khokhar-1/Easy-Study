@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Easy-Study – AI Study Assistant</title>
+  <meta name="description" content="AI-powered study platform with RAG, flashcards, quizzes, Pomodoro timer. Upload PDFs, URLs, YouTube videos and master any subject." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+<!-- ── Animated Background ──────────────────────────────────── -->
+<div class="bg-orbs" aria-hidden="true">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="orb orb-4"></div>
+</div>
+
+<!-- ── Parallax Star Field ──────────────────────────────────── -->
+<div class="parallax-field" id="parallax-field" aria-hidden="true"></div>
+
+<!-- ── Header ──────────────────────────────────────────────── -->
+<header class="header" id="header">
+  <div class="header-inner">
+    <div class="brand">
+      <span class="brand-icon">📚</span>
+      <span class="brand-name">Easy<span class="accent">Study</span></span>
+    </div>
+    <nav class="nav-bar" id="nav-bar">
+      <button class="nav-btn active" data-view="chat" id="nav-chat">
+        <span class="nav-icon">💬</span><span class="nav-label">Chat</span>
+      </button>
+      <button class="nav-btn" data-view="flashcards" id="nav-flashcards">
+        <span class="nav-icon">🃏</span><span class="nav-label">Flashcards</span>
+      </button>
+      <button class="nav-btn" data-view="quiz" id="nav-quiz">
+        <span class="nav-icon">📝</span><span class="nav-label">Quiz</span>
+      </button>
+      <button class="nav-btn" data-view="timer" id="nav-timer">
+        <span class="nav-icon">⏱️</span><span class="nav-label">Timer</span>
+      </button>
+      <button class="nav-btn" data-view="summary" id="nav-summary">
+        <span class="nav-icon">📋</span><span class="nav-label">Summary</span>
+      </button>
+    </nav>
+    <div class="header-pills">
+      <span class="pill" id="status-pill">⚡ Checking…</span>
+      <div class="model-switcher" id="model-switcher">
+        <button class="pill pill-model" id="model-pill" title="Click to switch model">🤖 llama3</button>
+        <div class="model-dropdown" id="model-dropdown">
+          <div class="model-dropdown-header">Select AI Model</div>
+          <div class="model-provider-group" id="provider-gemini">
+            <div class="model-provider-label">✨ Gemini (Free Cloud)</div>
+            <button class="model-option" data-provider="gemini" data-model="gemini-2.5-flash">Gemini 2.5 Flash</button>
+            <button class="model-option" data-provider="gemini" data-model="gemini-2.0-flash">Gemini 2.0 Flash</button>
+            <button class="model-option" data-provider="gemini" data-model="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</button>
+          </div>
+          <div class="model-provider-group" id="provider-openrouter">
+            <div class="model-provider-label">🌐 OpenRouter (Free Open-Source)</div>
+            <button class="model-option" data-provider="openrouter" data-model="auto-free">Auto Free (Best Available)</button>
+            <button class="model-option" data-provider="openrouter" data-model="nemotron-120b">Nemotron 120B</button>
+            <button class="model-option" data-provider="openrouter" data-model="gemma-4-31b">Gemma 4 31B</button>
+            <button class="model-option" data-provider="openrouter" data-model="gemma-4-26b">Gemma 4 26B</button>
+            <button class="model-option" data-provider="openrouter" data-model="qwen3-coder">Qwen3 Coder</button>
+            <button class="model-option" data-provider="openrouter" data-model="minimax-m2.5">MiniMax M2.5</button>
+          </div>
+          <div class="model-provider-group" id="provider-ollama">
+            <div class="model-provider-label">🖥️ Ollama (Local)</div>
+            <button class="model-option" data-provider="ollama" data-model="llama3:latest">Llama 3 (4.7 GB)</button>
+            <button class="model-option" data-provider="ollama" data-model="llama3.1:8b">Llama 3.1 8B (4.9 GB)</button>
+          </div>
+          <div class="model-provider-group" id="provider-openai">
+            <div class="model-provider-label">💎 OpenAI (Paid)</div>
+            <button class="model-option" data-provider="openai" data-model="gpt-4o-mini">GPT-4o Mini</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- ── MAIN CONTENT AREA ──────────────────────────────────── -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<main class="app-main" id="app-main">
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- ── VIEW: CHAT (default) ─────────────────────────── -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="view active" id="view-chat">
+    <!-- Sidebar toggle button -->
+    <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle sidebar">☰</button>
+    <div class="layout" id="chat-layout">
+
+      <!-- LEFT PANEL: Chat History + Knowledge Base -->
+      <aside class="panel panel-left glass" id="panel-left">
+        <!-- Chat History Section (Claude-like) -->
+        <div class="chat-history-section">
+          <button class="btn btn-new-chat" id="btn-new-chat">
+            <span class="btn-icon">✨</span> New Chat
+          </button>
+          <div class="chat-history-header">
+            <h3 class="section-title-sm">Recent Chats</h3>
+          </div>
+          <ul class="chat-history-list" id="chat-history-list">
+            <li class="chat-history-empty">No conversations yet</li>
+          </ul>
+        </div>
+
+        <!-- Collapsible Knowledge Base -->
+        <div class="kb-section">
+          <button class="kb-toggle" id="kb-toggle">
+            <span>📂 Knowledge Base</span>
+            <span class="badge" id="chunk-count">0 chunks</span>
+            <span class="kb-arrow">▾</span>
+          </button>
+          <div class="kb-content" id="kb-content">
+
+        <!-- Tab Bar -->
+        <div class="tab-bar" role="tablist">
+          <button class="tab active" id="tab-pdf"  data-tab="pdf"     role="tab">📄 PDF</button>
+          <button class="tab"        id="tab-url"  data-tab="url"     role="tab">🌐 URL</button>
+          <button class="tab"        id="tab-yt"   data-tab="youtube" role="tab">▶️ YT</button>
+          <button class="tab"        id="tab-text" data-tab="text"    role="tab">📝 Notes</button>
+        </div>
+
+        <!-- PDF Panel -->
+        <div class="tab-content active" id="content-pdf">
+          <div class="drop-zone" id="pdf-drop-zone">
+            <div class="drop-icon">📄</div>
+            <p class="drop-label">Drop PDF here or <span class="link-text">browse</span></p>
+            <p class="drop-sub">Supports multi-page PDFs</p>
+            <input type="file" id="pdf-file-input" accept=".pdf" hidden />
+          </div>
+          <button class="btn btn-primary" id="btn-upload-pdf" disabled>
+            <span class="btn-icon">⬆️</span> Upload PDF
+          </button>
+        </div>
+
+        <!-- URL Panel -->
+        <div class="tab-content" id="content-url">
+          <div class="input-group">
+            <label class="input-label" for="url-input">Article / Blog URL</label>
+            <input class="text-input" id="url-input" type="url"
+                   placeholder="https://example.com/article" />
+          </div>
+          <button class="btn btn-primary" id="btn-ingest-url">
+            <span class="btn-icon">🌐</span> Ingest Article
+          </button>
+        </div>
+
+        <!-- YouTube Panel -->
+        <div class="tab-content" id="content-youtube">
+          <div class="input-group">
+            <label class="input-label" for="yt-input">YouTube Video URL</label>
+            <input class="text-input" id="yt-input" type="url"
+                   placeholder="https://youtube.com/watch?v=…" />
+          </div>
+          <div class="info-box">
+            <span class="info-icon">ℹ️</span>
+            Extracts auto-generated or manual captions
+          </div>
+          <button class="btn btn-primary" id="btn-ingest-yt">
+            <span class="btn-icon">▶️</span> Extract & Ingest
+          </button>
+        </div>
+
+        <!-- Notes Panel -->
+        <div class="tab-content" id="content-text">
+          <div class="input-group">
+            <label class="input-label" for="notes-title">Title</label>
+            <input class="text-input" id="notes-title" type="text"
+                   placeholder="My Study Notes" value="My Notes" />
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="notes-text">Notes Content</label>
+            <textarea class="text-area" id="notes-text" rows="6"
+                      placeholder="Paste your notes, summaries, or any text here…"></textarea>
+          </div>
+          <button class="btn btn-primary" id="btn-ingest-text">
+            <span class="btn-icon">💾</span> Save Notes
+          </button>
+        </div>
+
+        <!-- Ingested Sources Log -->
+        <div class="sources-section">
+          <h3 class="section-title">Ingested Sources</h3>
+          <ul class="sources-list" id="sources-list">
+            <li class="source-empty">No sources yet. Add content above ↑</li>
+          </ul>
+        </div>
+          </div> <!-- /kb-content -->
+        </div> <!-- /kb-section -->
+      </aside>
+
+      <!-- RIGHT PANEL: Chat Interface -->
+      <section class="panel panel-right" id="panel-right">
+        <div class="chat-wrapper">
+          <!-- Chat messages -->
+          <div class="chat-messages" id="chat-messages">
+            <div class="welcome-card glass">
+              <div class="welcome-icon">🧠</div>
+              <h1 class="welcome-title">Easy-Study AI</h1>
+              <p class="welcome-desc">
+                Upload your study materials on the left, then ask me anything.
+                Switch between <strong>Gemini</strong> (free), <strong>OpenRouter</strong> (free), <strong>Ollama</strong>, and <strong>OpenAI</strong> models using the 🤖 button above.
+              </p>
+              <div class="welcome-features">
+                <span class="feature-tag">📄 PDFs</span>
+                <span class="feature-tag">🌐 Articles</span>
+                <span class="feature-tag">▶️ YouTube</span>
+                <span class="feature-tag">📝 Notes</span>
+                <span class="feature-tag">🃏 Flashcards</span>
+                <span class="feature-tag">📝 Quizzes</span>
+                <span class="feature-tag">🤖 Smart AI Chat</span>
+              </div>
+            </div>
+          </div>
+          <!-- Input bar -->
+          <div class="chat-input-bar glass" id="chat-input-bar">
+            <div class="input-row">
+              <div class="query-wrap">
+                <input
+                  class="query-input"
+                  id="query-input"
+                  type="text"
+                  placeholder="Ask anything about your uploaded materials…"
+                  autocomplete="off"
+                />
+              </div>
+              <div class="input-controls">
+                <label class="topk-label" for="topk-select">Context</label>
+                <select class="topk-select" id="topk-select">
+                  <option value="3">Top 3</option>
+                  <option value="5" selected>Top 5</option>
+                  <option value="10">Top 10</option>
+                </select>
+                <button class="btn btn-send" id="btn-send" title="Send (Enter)">
+                  <span class="send-icon">➤</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- ── VIEW: FLASHCARDS ─────────────────────────────── -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="view" id="view-flashcards">
+    <div class="view-container">
+
+      <!-- Generation Controls -->
+      <div class="tool-controls glass" id="fc-controls">
+        <div class="tool-header">
+          <h2 class="tool-title">🃏 AI Flashcards</h2>
+          <p class="tool-desc">Generate flashcards from your knowledge base using AI</p>
+        </div>
+        <div class="tool-form">
+          <div class="input-group">
+            <label class="input-label" for="fc-topic">Topic (optional)</label>
+            <input class="text-input" id="fc-topic" type="text"
+                   placeholder="Leave empty for general flashcards" />
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="fc-count">Number of Cards</label>
+            <select class="text-input" id="fc-count">
+              <option value="5">5 cards</option>
+              <option value="10" selected>10 cards</option>
+              <option value="15">15 cards</option>
+              <option value="20">20 cards</option>
+            </select>
+          </div>
+          <button class="btn btn-primary btn-generate" id="btn-gen-flashcards">
+            <span class="btn-icon">✨</span> Generate Flashcards
+          </button>
+        </div>
+      </div>
+
+      <!-- Flashcard Deck -->
+      <div class="fc-deck-area" id="fc-deck-area" style="display:none">
+        <!-- Progress -->
+        <div class="fc-progress">
+          <div class="fc-progress-bar">
+            <div class="fc-progress-fill" id="fc-progress-fill"></div>
+          </div>
+          <span class="fc-progress-text" id="fc-progress-text">0 / 0</span>
+        </div>
+
+        <!-- Card -->
+        <div class="fc-card-container">
+          <div class="fc-card" id="fc-card" tabindex="0">
+            <div class="fc-card-inner" id="fc-card-inner">
+              <div class="fc-card-front">
+                <div class="fc-card-label">QUESTION</div>
+                <div class="fc-card-text" id="fc-front-text"></div>
+              </div>
+              <div class="fc-card-back">
+                <div class="fc-card-label">ANSWER</div>
+                <div class="fc-card-text" id="fc-back-text"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="fc-controls-row">
+          <button class="btn fc-btn" id="fc-prev" title="Previous (←)">◀ Prev</button>
+          <div class="fc-rating">
+            <button class="btn fc-rate fc-rate-hard" data-rate="hard" title="Hard">😣 Hard</button>
+            <button class="btn fc-rate fc-rate-ok" data-rate="ok" title="OK">🤔 OK</button>
+            <button class="btn fc-rate fc-rate-easy" data-rate="easy" title="Easy">😊 Easy</button>
+          </div>
+          <button class="btn fc-btn" id="fc-next" title="Next (→)">Next ▶</button>
+        </div>
+
+        <!-- Shuffle / Reset -->
+        <div class="fc-actions-row">
+          <button class="btn fc-action-btn" id="fc-shuffle">🔀 Shuffle</button>
+          <button class="btn fc-action-btn" id="fc-restart">🔄 Restart</button>
+          <span class="fc-mastery" id="fc-mastery">Mastery: 0%</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- ── VIEW: QUIZ ───────────────────────────────────── -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="view" id="view-quiz">
+    <div class="view-container">
+
+      <!-- Generation Controls -->
+      <div class="tool-controls glass" id="quiz-controls">
+        <div class="tool-header">
+          <h2 class="tool-title">📝 AI Quiz</h2>
+          <p class="tool-desc">Test your knowledge with AI-generated multiple choice questions</p>
+        </div>
+        <div class="tool-form">
+          <div class="input-group">
+            <label class="input-label" for="quiz-topic">Topic (optional)</label>
+            <input class="text-input" id="quiz-topic" type="text"
+                   placeholder="Leave empty for general quiz" />
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="quiz-count">Number of Questions</label>
+            <select class="text-input" id="quiz-count">
+              <option value="3">3 questions</option>
+              <option value="5" selected>5 questions</option>
+              <option value="10">10 questions</option>
+              <option value="15">15 questions</option>
+            </select>
+          </div>
+          <button class="btn btn-primary btn-generate" id="btn-gen-quiz">
+            <span class="btn-icon">✨</span> Generate Quiz
+          </button>
+        </div>
+      </div>
+
+      <!-- Quiz Area -->
+      <div class="quiz-area" id="quiz-area" style="display:none">
+        <!-- Progress -->
+        <div class="quiz-progress">
+          <div class="quiz-progress-bar">
+            <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
+          </div>
+          <span class="quiz-progress-text" id="quiz-progress-text">Question 1 of 5</span>
+        </div>
+
+        <!-- Question Card -->
+        <div class="quiz-card glass" id="quiz-card">
+          <div class="quiz-question" id="quiz-question"></div>
+          <div class="quiz-options" id="quiz-options"></div>
+          <div class="quiz-explanation" id="quiz-explanation" style="display:none">
+            <div class="quiz-expl-label">💡 Explanation</div>
+            <div class="quiz-expl-text" id="quiz-expl-text"></div>
+          </div>
+          <button class="btn btn-primary quiz-next-btn" id="quiz-next-btn" style="display:none">
+            Next Question →
+          </button>
+        </div>
+
+        <!-- Score Card (shown at end) -->
+        <div class="quiz-score glass" id="quiz-score" style="display:none">
+          <div class="score-icon" id="score-icon">🎯</div>
+          <div class="score-value" id="score-value">0/0</div>
+          <div class="score-label">Correct Answers</div>
+          <div class="score-percent" id="score-percent">0%</div>
+          <div class="score-bar">
+            <div class="score-bar-fill" id="score-bar-fill"></div>
+          </div>
+          <button class="btn btn-primary" id="quiz-retry">🔄 Try Again</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- ── VIEW: POMODORO TIMER ─────────────────────────── -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="view" id="view-timer">
+    <div class="view-container timer-view-container">
+      <div class="timer-card glass">
+        <h2 class="tool-title">⏱️ Focus Timer</h2>
+        <p class="tool-desc">Pomodoro technique: Stay focused, take breaks</p>
+
+        <!-- Timer Display -->
+        <div class="timer-display">
+          <svg class="timer-ring" viewBox="0 0 200 200">
+            <defs>
+              <linearGradient id="timer-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#3B82F6" />
+                <stop offset="100%" stop-color="#10B981" />
+              </linearGradient>
+            </defs>
+            <circle class="timer-ring-bg" cx="100" cy="100" r="90" />
+            <circle class="timer-ring-progress" id="timer-ring-progress" cx="100" cy="100" r="90" />
+          </svg>
+          <div class="timer-text">
+            <div class="timer-time" id="timer-time">25:00</div>
+            <div class="timer-mode" id="timer-mode">FOCUS</div>
+          </div>
+        </div>
+
+        <!-- Timer Mode Tabs -->
+        <div class="timer-modes">
+          <button class="timer-mode-btn active" data-duration="25" id="mode-focus">Focus (25m)</button>
+          <button class="timer-mode-btn" data-duration="5" id="mode-short">Short Break (5m)</button>
+          <button class="timer-mode-btn" data-duration="15" id="mode-long">Long Break (15m)</button>
+        </div>
+
+        <!-- Custom Time Input -->
+        <div class="timer-custom-row">
+          <input type="number" class="timer-custom-input" id="timer-custom-minutes" min="1" max="180" value="25" placeholder="min" />
+          <span class="timer-custom-label">min</span>
+          <button class="timer-custom-set" id="timer-custom-set">Set</button>
+        </div>
+
+        <!-- Timer Controls -->
+        <div class="timer-controls">
+          <button class="btn btn-primary timer-start-btn" id="timer-start">▶ Start</button>
+          <button class="btn timer-reset-btn" id="timer-reset">⟲ Reset</button>
+        </div>
+
+        <!-- Session Counter -->
+        <div class="timer-sessions">
+          <span class="timer-session-label">Sessions Completed</span>
+          <div class="timer-session-dots" id="timer-session-dots">
+            <span class="session-dot"></span>
+            <span class="session-dot"></span>
+            <span class="session-dot"></span>
+            <span class="session-dot"></span>
+          </div>
+          <span class="timer-session-count" id="timer-session-count">0 / 4</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- ── VIEW: SUMMARY ────────────────────────────────── -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="view" id="view-summary">
+    <div class="view-container">
+      <div class="tool-controls glass" id="summary-controls">
+        <div class="tool-header">
+          <h2 class="tool-title">📋 AI Summary</h2>
+          <p class="tool-desc">Generate a concise summary of your ingested study materials</p>
+        </div>
+        <div class="tool-form">
+          <div class="input-group">
+            <label class="input-label" for="summary-topic">Topic (optional)</label>
+            <input class="text-input" id="summary-topic" type="text"
+                   placeholder="Leave empty for general summary" />
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="summary-length">Summary Length</label>
+            <select class="text-input" id="summary-length">
+              <option value="short">Short (~100 words)</option>
+              <option value="medium" selected>Medium (~250 words)</option>
+              <option value="long">Long (~500 words)</option>
+            </select>
+          </div>
+          <button class="btn btn-primary btn-generate" id="btn-gen-summary">
+            <span class="btn-icon">✨</span> Generate Summary
+          </button>
+        </div>
+      </div>
+
+      <!-- Summary Result -->
+      <div class="summary-result glass" id="summary-result" style="display:none">
+        <h3 class="summary-result-title" id="summary-result-title">📋 Summary</h3>
+        <div class="summary-text" id="summary-text"></div>
+        <div class="summary-keypoints" id="summary-keypoints">
+          <h4 class="keypoints-title">🔑 Key Takeaways</h4>
+          <ul class="keypoints-list" id="keypoints-list"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── Toast Notification ──────────────────────────────────── -->
+<div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+<!-- ── Loading Overlay ──────────────────────────────────────── -->
+<div class="loading-overlay" id="loading-overlay" aria-hidden="true">
+  <div class="loading-card glass">
+    <div class="spinner"></div>
+    <p class="loading-text" id="loading-text">Processing…</p>
+  </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>

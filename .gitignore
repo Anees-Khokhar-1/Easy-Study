@@ -1,0 +1,57 @@
+# ╔══════════════════════════════════════════════════════════════╗
+# ║  Easy-Study – .gitignore                                    ║
+# ╚══════════════════════════════════════════════════════════════╝
+
+# ── Python ────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+dist/
+build/
+eggs/
+*.whl
+
+# ── Virtual Environment ──────────────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+
+# ── Environment & Secrets ────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# ── FAISS Index & Data ───────────────────────────────────────────
+data/faiss_index/
+data/uploads/
+data/logs/
+
+# ── IDE / Editor ─────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── OS ───────────────────────────────────────────────────────────
+desktop.ini
+*.lnk
+
+# ── Jupyter Notebooks ────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── Misc ─────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.bak
+*.orig
+node_modules/
