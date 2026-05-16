@@ -1,5 +1,7 @@
 # 📚 Easy-Study — AI-Powered Multi-Model Study Assistant
 
+[![Python CI/CD Pipeline](https://github.com/Anees-Khokhar-1/Easy-Study/actions/workflows/python-ci.yml/badge.svg)](https://github.com/Anees-Khokhar-1/Easy-Study/actions/workflows/python-ci.yml)
+
 > **Ingest · Retrieve · Learn** — Upload your study materials, switch between AI models, and get intelligent answers powered by RAG.
 
 A production-ready, modular RAG (Retrieval-Augmented Generation) platform that:
